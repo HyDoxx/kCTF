@@ -1,13 +1,13 @@
 //
-// Created by HelloCTF_OS on 25-4-1.
+// Created by kinolu on 25-4-1.
 //
 
 #ifndef KAES_H
 #define KAES_H
 #include <cinttypes>
+#include "kUtils.h"
 
 class kCTF_AES {
-public:
 	uint8_t defaultSbox[256] =
 	{
 		0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -48,7 +48,13 @@ public:
 	};
 	uint8_t sboxBuf[256];
 	uint8_t *sbox = defaultSbox, *inverseSbox = defaultInverseSbox;
-
+	const char* text = nullptr,* key = nullptr;
+	size_t textLen = 0, keyLen = 0;
+	size_t keyPoint = 0;
+public:
+	typedef enum type: uint8_t {
+		ECB=0X30, CBC=0X40, CFB=0X50
+	};
 	static uint8_t * calcInverseSbox(uint8_t *sbox, uint8_t *buf) {
 		for (int i = 0; i < 256; i++) {
 			buf[(sbox[i] >> 4) * 0x10 + (sbox[i] & 0xF)] = (i / 0x10) << 4 | (i % 0x10);
@@ -66,6 +72,64 @@ public:
 	void setInverseSbox(uint8_t *inverseSbox) {
 		this->inverseSbox = inverseSbox;
 		this->sbox = calcInverseSbox(inverseSbox, this->sboxBuf);
+	}
+
+	uint8_t getSboxNu(uint8_t rows, uint8_t columns) {
+		return sbox[rows * 0x10 + columns];
+	}
+
+	uint8_t getInverseSboxNu(uint8_t rows, uint8_t columns) {
+		return inverseSbox[rows * 0x10 + columns];
+	}
+
+	void set(const char* text, size_t textLen, const char* key, size_t keyLen) {
+		this->text = text;
+		this->textLen = textLen;
+		this->key = key;
+		this->keyLen = keyLen;
+	}
+
+	void initialRound(uint8_t (*bytesSet)[16]) {
+		for (int i = 0; i < 16; ++i) {
+			(*bytesSet)[i] ^= key[keyPoint++];
+		}
+	}
+
+	void subBytes(uint8_t (*bytesSet)[16]) {
+		for (int i = 0; i < 16; ++i) {
+			(*bytesSet)[i] = getSboxNu((*bytesSet)[i] >> 4,(*bytesSet)[i] & 0xF);
+		}
+	}
+
+	void shiftRows(uint8_t *sbox) {
+		uint8_t *buf[4], temp1, temp2;
+		getVerticalWindow<uint8_t, 4>(sbox, 4, 4, false, 1, buf);
+		temp1 = *buf[0];
+		*buf[0] = *buf[1];
+		*buf[1] = *buf[2];
+		*buf[2] = *buf[3];
+		*buf[3] = temp1;
+		getVerticalWindow<uint8_t, 4>(sbox, 4, 4, true, 2, buf);
+		temp1 = *buf[0];
+		temp2 = *buf[1];
+		*buf[0] = *buf[2];
+		*buf[1] = *buf[3];
+		*buf[2] = temp1;
+		*buf[3] = temp2;
+		getVerticalWindow<uint8_t, 4>(sbox, 4, 4, true, 3, buf);
+		temp1 = *buf[3];
+		*buf[3] = *buf[2];
+		*buf[2] = *buf[1];
+		*buf[1] = *buf[0];
+		*buf[0] = temp1;
+	}
+
+	void mixColumns(uint8_t *sbox) {
+
+	}
+
+	void addRoundKey(uint8_t *sbox) {
+
 	}
 };
 #endif //KAES_H

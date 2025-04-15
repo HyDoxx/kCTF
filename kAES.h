@@ -52,7 +52,7 @@ class kCTF_AES {
 	size_t textLen = 0, keyLen = 0;
 	size_t keyPoint = 0;
 public:
-	typedef enum type: uint8_t {
+    enum type: uint8_t {
 		ECB=0X30, CBC=0X40, CFB=0X50
 	};
 	static uint8_t * calcInverseSbox(uint8_t *sbox, uint8_t *buf) {
@@ -101,34 +101,24 @@ public:
 		}
 	}
 
-	void shiftRows(uint8_t *sbox) {
-		uint8_t *buf[4], temp1, temp2;
-		getVerticalWindow<uint8_t, 4>(sbox, 4, 4, false, 1, buf);
-		temp1 = *buf[0];
-		*buf[0] = *buf[1];
-		*buf[1] = *buf[2];
-		*buf[2] = *buf[3];
-		*buf[3] = temp1;
-		getVerticalWindow<uint8_t, 4>(sbox, 4, 4, true, 2, buf);
-		temp1 = *buf[0];
-		temp2 = *buf[1];
-		*buf[0] = *buf[2];
-		*buf[1] = *buf[3];
-		*buf[2] = temp1;
-		*buf[3] = temp2;
-		getVerticalWindow<uint8_t, 4>(sbox, 4, 4, true, 3, buf);
-		temp1 = *buf[3];
-		*buf[3] = *buf[2];
-		*buf[2] = *buf[1];
-		*buf[1] = *buf[0];
-		*buf[0] = temp1;
+	void shiftRows(uint8_t *subBox) {
+        windowView<uint8_t, 4> view;
+
+        view.getVerticalWindow(subBox, 4, 4, true, 1);
+        view << 1;
+
+        view.getVerticalWindow(subBox, 4, 4, true, 2);
+		view << 2;
+
+        view.getVerticalWindow(subBox, 4, 4, true, 3);
+        view << 3;
 	}
 
-	void mixColumns(uint8_t *sbox) {
+	void mixColumns(uint8_t *subBox) {
 
 	}
 
-	void addRoundKey(uint8_t *sbox) {
+	void addRoundKey(uint8_t *subBox) {
 
 	}
 };
